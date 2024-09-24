@@ -1,0 +1,38 @@
+name: Deploy Svelte App to Raspberry Pi
+
+defaults:
+  run:
+    working-directory: code
+    
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v4
+
+    - name: SSH into Raspberry Pi and deploy the app
+      uses: appleboy/ssh-action@v0.1.3
+      with:
+        host: ${{ secrets.PI_HOST }}
+        username: ${{ secrets.PI_USER }}
+        password: ${{ secrets.PI_PASSWORD }}
+        script: |
+          # Navigate to the code directory
+          cd code
+          
+          # Build the Docker image using the Dockerfile in the repository
+          docker build -t svelte-app:latest .
+
+          # Stop and remove the existing container if it's running
+          docker stop svelte-app || true
+          docker rm svelte-app || true
+
+          # Run the new container
+          docker run -d --name svelte-app -p 3000:3000 svelte-app:latest
